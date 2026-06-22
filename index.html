@@ -375,16 +375,8 @@
 /* ============================================================
    KONFIGURATION
    ============================================================ */
-
 const DIRECT_URL = "/.netlify/functions/solar";
 const PROXY_URLS = [];
-
-// Fallback-Proxys, falls CORS den Direktzugriff blockiert (werden der Reihe nach versucht)
-const PROXY_URLS = [
-  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-];
-
 const AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 Minuten
 
 /* ============================================================
