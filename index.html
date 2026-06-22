@@ -1,1 +1,67 @@
-<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Solar Live</title><style>body{font-family:Segoe UI,sans-serif;background:#0b1f1a;color:#fff;max-width:500px;margin:auto;padding:20px} .card{background:#102b23;border-radius:20px;padding:20px;margin:12px 0} .big{font-size:48px;font-weight:700;text-align:center}.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.stat{background:#133328;padding:12px;border-radius:12px;text-align:center}.lbl{color:#8fb3a3;font-size:12px}.err{color:#ffb3a3}</style></head><body><h2>☀️ Solar Live</h2><div id="plant">Lade...</div><div class="card"><div class="lbl">Aktuelle Leistung</div><div class="big" id="power">--</div></div><div class="stats"><div class="stat"><div id="today">--</div><div class="lbl">Heute</div></div><div class="stat"><div id="month">--</div><div class="lbl">Monat</div></div><div class="stat"><div id="total">--</div><div class="lbl">Gesamt</div></div></div><p id="updated"></p><p class="err" id="err"></p><script>const DIRECT_URL='/.netlify/functions/solar';function unescapeHtml(s){return s.replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')}async function load(){try{const r=await fetch(DIRECT_URL);const t=await r.text();const outer=JSON.parse(t);const d=JSON.parse(unescapeHtml(outer.data));document.getElementById('plant').textContent=d.stationOverview?.stationName||'PV-Anlage';document.getElementById('power').textContent=(d.realKpi?.realTimePower||0)+' kW';document.getElementById('today').textContent=(d.realKpi?.dailyEnergy||0)+' kWh';document.getElementById('month').textContent=(d.realKpi?.monthEnergy||0)+' kWh';document.getElementById('total').textContent=(d.realKpi?.cumulativeEnergy||0)+' kWh';document.getElementById('updated').textContent='Aktualisiert: '+new Date().toLocaleTimeString('de-DE');}catch(e){document.getElementById('err').textContent=e.message;}}load();setInterval(load,300000);</script></body></html>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solar Live</title>
+<style>
+:root{--bg:#0b1f1a;--card:#102b23;--line:#1d4537;--sun:#ffb84d;--green:#5fd99c;--text:#eef7f1;--dim:#8fb3a3}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,sans-serif}
+.wrap{max-width:480px;margin:auto;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px;margin-bottom:16px}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px}
+.stat{background:rgba(255,255,255,.03);padding:12px;border-radius:12px;text-align:center}
+.label{font-size:11px;color:var(--dim);text-transform:uppercase}
+.num{font-weight:700}
+#gaugeSvg{width:100%;max-width:320px;display:block;margin:auto}
+.header{display:flex;justify-content:space-between;align-items:center}
+.small{color:var(--dim);font-size:12px}
+button{width:100%;padding:14px;border:0;border-radius:14px;background:var(--sun);font-weight:bold}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="header"><h2>☀ Solar Live</h2><span id="status">live</span></div>
+<div id="plant" class="small">Lade Anlage...</div>
+<div class="card">
+<div class="label">Aktuelle Leistung</div>
+<svg id="gaugeSvg" viewBox="0 0 320 200"></svg>
+<div class="stats">
+<div class="stat"><div id="today" class="num">-</div><div class="label">Heute</div></div>
+<div class="stat"><div id="month" class="num">-</div><div class="label">Monat</div></div>
+<div class="stat"><div id="total" class="num">-</div><div class="label">Gesamt</div></div>
+</div>
+</div>
+<div class="small">Letzte Aktualisierung: <span id="updated">-</span></div><br>
+<button onclick="loadData()">Aktualisieren</button>
+</div>
+<script>
+const DIRECT_URL='/.netlify/functions/solar';
+function unescapeHtml(str){return str.replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');}
+function renderGauge(v){
+ const svg=document.getElementById('gaugeSvg');
+ const cx=160,cy=150,r=110,max=15;
+ const ratio=Math.min(v/max,1);
+ const end=-210+(240*ratio);
+ function p(a,R){const rad=a*Math.PI/180;return{x:cx+R*Math.cos(rad),y:cy+R*Math.sin(rad)}}
+ function arc(a0,a1,R){const s=p(a0,R),e=p(a1,R);return `M ${s.x} ${s.y} A ${R} ${R} 0 1 1 ${e.x} ${e.y}`}
+ svg.innerHTML=`<path d="${arc(-210,30,r)}" fill="none" stroke="#1d4537" stroke-width="16"/><path d="${arc(-210,end,r)}" fill="none" stroke="#ffb84d" stroke-width="16"/><text x="160" y="145" text-anchor="middle" fill="white" font-size="40" font-weight="700">${Number(v).toFixed(2)}</text><text x="160" y="170" text-anchor="middle" fill="#8fb3a3">kW</text>`;
+}
+async function loadData(){
+ try{
+  const r=await fetch(DIRECT_URL);
+  const txt=await r.text();
+  const outer=JSON.parse(txt);
+  const data=typeof outer.data==='string'?JSON.parse(unescapeHtml(outer.data)):outer.data;
+  const kpi=data.realKpi||{};
+  document.getElementById('plant').textContent=data.stationName||data.stationOverview?.stationName||'PV-Anlage';
+  renderGauge(kpi.realTimePower||0);
+  document.getElementById('today').textContent=(kpi.dailyEnergy||0)+' kWh';
+  document.getElementById('month').textContent=(kpi.monthEnergy||0)+' kWh';
+  document.getElementById('total').textContent=(kpi.cumulativeEnergy||0)+' kWh';
+  document.getElementById('updated').textContent=new Date().toLocaleTimeString('de-DE');
+ }catch(e){document.getElementById('status').textContent='Fehler';console.error(e)}
+}
+loadData();setInterval(loadData,300000);
+</script>
+</body></html>
