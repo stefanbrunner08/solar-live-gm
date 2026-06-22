@@ -377,7 +377,8 @@
    ============================================================ */
 const KIOSK_KEY = "Fr8l9ItFy5uoGJPO8homHdo5p4GHiqOh";
 const REGION_HOST = "uni001eu5.fusionsolar.huawei.com";
-const DIRECT_URL = `https://${REGION_HOST}/rest/pvms/web/kiosk/v1/station-kiosk-file?kk=${KIOSK_KEY}`;
+const DIRECT_URL = "/.netlify/functions/solar";
+const PROXY_URLS = [];
 
 // Fallback-Proxys, falls CORS den Direktzugriff blockiert (werden der Reihe nach versucht)
 const PROXY_URLS = [
