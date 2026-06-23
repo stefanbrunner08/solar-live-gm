@@ -312,10 +312,10 @@
       </div>
       <div class="brand-text">
         <h1>Solar Live</h1>
-        <p id="plantLabel">Anlage wird geladenâ¦</p>
+        <p id="plantLabel">Anlage wird geladen…</p>
       </div>
     </div>
-    <div class="pill"><span class="status-dot" id="statusDot"></span><span id="statusText">verbindeâ¦</span></div>
+    <div class="pill"><span class="status-dot" id="statusDot"></span><span id="statusText">verbinde…</span></div>
   </header>
 
   <div class="error-banner" id="errorBanner"></div>
@@ -328,22 +328,33 @@
     </div>
     <div class="stat-row">
       <div class="stat">
-        <div class="stat-num" id="statToday">â</div>
+        <div class="stat-num" id="statToday">–</div>
         <div class="stat-lbl">Heute</div>
       </div>
       <div class="stat">
-        <div class="stat-num" id="statMonth">â</div>
+        <div class="stat-num" id="statMonth">–</div>
         <div class="stat-lbl">Monat</div>
       </div>
       <div class="stat">
-        <div class="stat-num" id="statTotal">â</div>
+        <div class="stat-num" id="statTotal">–</div>
         <div class="stat-lbl">Gesamt</div>
       </div>
     </div>
   </div>
 
+  <!-- CHART CARD -->
+  <div class="chart-card">
+    <div class="chart-head">
+      <p class="card-label">Tagesverlauf</p>
+      <span class="chart-peak" id="chartPeak"></span>
+    </div>
+    <div id="chartContainer">
+      <div class="skeleton">Lade Verlaufsdaten…</div>
+    </div>
+  </div>
+
   <div class="meta-row">
-    <span>Letzte Aktualisierung: <b id="lastUpdate">â</b></span>
+    <span>Letzte Aktualisierung: <b id="lastUpdate">–</b></span>
     <span id="nextUpdate"></span>
   </div>
 
@@ -393,7 +404,7 @@ function fmtTime(d){
 }
 
 function fmtNum(v, decimals=2){
-  if (v === null || v === undefined || isNaN(v)) return 'â';
+  if (v === null || v === undefined || isNaN(v)) return '–';
   return Number(v).toLocaleString('de-DE', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
@@ -401,7 +412,7 @@ function fmtNum(v, decimals=2){
 // FusionSolar liefert realTimePower meist bereits in kW.
 function formatPower(kwValue){
   const kw = Number(kwValue);
-  if (isNaN(kw)) return { value: 'â', unit: 'kW' };
+  if (isNaN(kw)) return { value: '–', unit: 'kW' };
   if (Math.abs(kw) < 1) {
     return { value: fmtNum(kw * 1000, 0), unit: 'W' };
   }
@@ -454,7 +465,7 @@ function normalizeData(d){
   // Erwartete Struktur (laut FusionSolar Kiosk API):
   // d.realKpi = { realTimePower, cumulativeEnergy, monthEnergy, dailyEnergy, yearEnergy }
   // d.stationName / d.name
-  // mÃ¶gliche Kurven-Felfer: d.curveInfo / d.xy / d.power_curve / d.dataList o.Ã¤. â wir suchen robust.
+  // mögliche Kurven-Felfer: d.curveInfo / d.xy / d.power_curve / d.dataList o.ä. — wir suchen robust.
   const realKpi = d.realKpi || d.realKpiData || {};
 
   let curve = null;
@@ -481,7 +492,7 @@ function normalizeData(d){
 function extractCurvePoints(curve){
   if (!curve) return [];
 
-  // Fall 1: Array von Objekten mit time/value-Ã¤hnlichen Feldern
+  // Fall 1: Array von Objekten mit time/value-ähnlichen Feldern
   if (Array.isArray(curve)){
     return curve.map(pt => {
       if (Array.isArray(pt)) {
@@ -493,7 +504,7 @@ function extractCurvePoints(curve){
     }).filter(p => p.t !== undefined && !isNaN(p.v));
   }
 
-  // Fall 2: { xAxis: [...], series: [{data:[...]}] } â Highcharts/Echarts-Ã¤hnlich
+  // Fall 2: { xAxis: [...], series: [{data:[...]}] } – Highcharts/Echarts-ähnlich
   if (curve.xAxis && curve.series){
     const x = curve.xAxis;
     const series = Array.isArray(curve.series) ? curve.series[0] : curve.series;
@@ -510,13 +521,13 @@ function extractCurvePoints(curve){
 }
 
 /* ============================================================
-   GAUGE RENDERING (SVG Tacho, 0â270Â° Bogen)
+   GAUGE RENDERING (SVG Tacho, 0–270° Bogen)
    ============================================================ */
 function renderGauge(currentKw, capacityHintKw){
   const svg = document.getElementById('gaugeSvg');
   const cx = 160, cy = 150, r = 110;
 
-  // Skalenmaximum: dynamisch, etwas Ã¼ber dem hÃ¶chsten bisher gesehenen Wert,
+  // Skalenmaximum: dynamisch, etwas über dem höchsten bisher gesehenen Wert,
   // mit sinnvollem Minimum, damit die Nadel nicht immer am Anschlag steht.
   let maxScale = capacityHintKw && capacityHintKw > 0 ? capacityHintKw * 1.15 : Math.max(maxPowerSeenToday * 1.25, 1);
   if (currentKw > maxScale) maxScale = currentKw * 1.15;
@@ -613,7 +624,7 @@ function renderChart(points){
   const linePath = coords.map((c,i) => `${i===0?'M':'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
   const areaPath = `${linePath} L ${coords[coords.length-1].x.toFixed(1)} ${padT+innerH} L ${coords[0].x.toFixed(1)} ${padT+innerH} Z`;
 
-  // X-Achsenbeschriftung: ca 5 Labels Ã¼ber den Tag verteilt
+  // X-Achsenbeschriftung: ca 5 Labels über den Tag verteilt
   const labelIdxs = [0, Math.floor(n*0.25), Math.floor(n*0.5), Math.floor(n*0.75), n-1];
   let axisLabels = '';
   labelIdxs.forEach(i => {
@@ -674,13 +685,14 @@ function updateUI(data){
   renderGauge(isNaN(data.realTimePower) ? 0 : data.realTimePower);
 
   document.getElementById('statToday').textContent =
-    !isNaN(data.dailyEnergy) ? fmtNum(data.dailyEnergy,1) + ' kWh' : 'â';
+    !isNaN(data.dailyEnergy) ? fmtNum(data.dailyEnergy,1) + ' kWh' : '–';
   document.getElementById('statMonth').textContent =
-    !isNaN(data.monthEnergy) ? fmtNum(data.monthEnergy,0) + ' kWh' : 'â';
+    !isNaN(data.monthEnergy) ? fmtNum(data.monthEnergy / 1000, 2) + ' MWh' : '–';
   document.getElementById('statTotal').textContent =
-    !isNaN(data.cumulativeEnergy) ? fmtNum(data.cumulativeEnergy,0) + ' kWh' : 'â';
+    !isNaN(data.cumulativeEnergy) ? fmtNum(data.cumulativeEnergy / 1000, 2) + ' MWh' : '–';
 
-  
+  const points = extractCurvePoints(data.rawCurve);
+  renderChart(points);
 
   const now = new Date();
   document.getElementById('lastUpdate').textContent = fmtTime(now);
@@ -697,8 +709,8 @@ async function doRefresh(manual){
 
   btn.classList.add('loading');
   btn.disabled = true;
-  if (manual) label.textContent = 'Aktualisiereâ¦';
-  setStatus(true, 'ladeâ¦');
+  if (manual) label.textContent = 'Aktualisiere…';
+  setStatus(true, 'lade…');
 
   try{
     const data = await fetchKioskData();
@@ -706,7 +718,7 @@ async function doRefresh(manual){
   }catch(e){
     console.error(e);
     setStatus(false, 'Fehler');
-    showError(`<b>Verbindung zum Dashboard fehlgeschlagen.</b><br>${e.message || e}<br><br>MÃ¶gliche GrÃ¼nde: der Kiosk-Link ist abgelaufen, oder dein Netzwerk/Browser blockiert den Zugriff. Du kannst es mit dem Button erneut versuchen.`);
+    showError(`<b>Verbindung zum Dashboard fehlgeschlagen.</b><br>${e.message || e}<br><br>Mögliche Gründe: der Kiosk-Link ist abgelaufen, oder dein Netzwerk/Browser blockiert den Zugriff. Du kannst es mit dem Button erneut versuchen.`);
   }finally{
     btn.classList.remove('loading');
     btn.disabled = false;
@@ -730,7 +742,7 @@ function tickCountdown(){
   }
   const m = Math.floor(secondsToNext/60);
   const s = secondsToNext % 60;
-  document.getElementById('nextUpdate').textContent = `nÃ¤chstes Update in ${m}:${s.toString().padStart(2,'0')}`;
+  document.getElementById('nextUpdate').textContent = `nächstes Update in ${m}:${s.toString().padStart(2,'0')}`;
 }
 
 /* ============================================================
@@ -741,7 +753,7 @@ document.getElementById('refreshBtn').addEventListener('click', () => doRefresh(
 doRefresh(true);
 countdownTimer = setInterval(tickCountdown, 1000);
 
-// Beim ZurÃ¼ckkehren in den Tab/App sofort aktualisieren, falls lÃ¤nger weg
+// Beim Zurückkehren in den Tab/App sofort aktualisieren, falls länger weg
 let lastVisible = Date.now();
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible'){
